@@ -16,12 +16,6 @@ elif len(ARR) < 9:
 elif len(ARR) <= 16:
     how_many_rows = 9
 
-"""
-# first row is original array
-output = [[ARR[:]]]
-# then make empty row for the rest
-output.append([[] for _ in range(how_many_rows - 1)])
-"""
 
 output = [[] for _ in range(how_many_rows)]
 output[0].append(ARR[:])
@@ -76,6 +70,19 @@ def fill_in_missing_entries():
     # or the row after where they are merging things for the first time. Therefore, just compare those rows with
     # the rows above them to fill in any blanks.
 
+    # I know what your thinking. "Five for loops?! is this dev insane?!"
+    # Maybe. But it is not O(n^5). The five for loops are to deal with the complex data.
+    # We have elements of a list that are themselves lists, which contain subarrays.
+    # The nested for loops are really just for accessing these rows of subarrays, and each row of subarrays in length n.
+    # So we compare the row above middle to the middle row, then the row above middle to the row below middle.
+    # Which makes this O(4*n) = O(n) technically.
+
+    # For example, we could have [
+    # [[5,2], [1], [3,4]],        above middle
+    # [[5], [2], [3], [4]],       middle
+    # [[2, 5], [3,4]]             below middle
+    # if we want to fill in the missing [1]s, we need to compare the above to middle and above to below.
+
     counter = 0 # keep a counter b/c each insert means we have to move it over by one.
     middle_row_index = (how_many_rows // 2) # to quickly find middle rows.
 
@@ -105,8 +112,44 @@ def fill_in_missing_entries():
                     if row == middle_row_index:
                         counter += 1
         counter = 0
-                        
 
+def initial_checks(arr):
+
+    """ Returns [empty, same type, already sorted]. -1 means it passes, positive means it fails and we do not sort """
+    results = [-1, -1, -1]
+
+    # check if arr is empty
+    if len(arr) <= 0:
+        results[0] = 1
+        return results
+
+    # if arr only has 1 element, it is already sorted.
+    if len(arr) == 1:
+        results[1] = 1
+        return results
+
+    # otherwise check every element to see if it is the same type as the previous one and if arr is already sorted
+    sorted = True
+    for i in range(1, len(arr)):
+        # compare the types
+        if type(arr[i-1]) == type(arr[i]):
+
+            # if we still think its sorted, check if prev is greater than current to confirm its not sorted
+            if sorted == True and arr[i-1] > arr [i]:
+                sorted = False
+        
+        # if they are different types, then mark that in results and stop searching.
+        else:
+            results[1] = i
+            return results
+
+    if sorted:
+        results[2] = 1
+
+    return results
+
+
+initial_check_results = initial_checks(ARR)
 mergeSort(ARR, 1)
 fill_in_missing_entries()
 print(output)
