@@ -1,7 +1,7 @@
-from manim import *
+from manim import *  # pyright: ignore[reportMissingImports]
 
 """ Variables to change (default is ARR = [38, 27, 43, 3, 9, 82, 10])"""
-ARR = [38, 27, 43, 9, 82, 10]
+ARR = [38, 27, 43, 3, 9, 82, 10]
 
 
 """ Initializing the Output array with empty rows. """
@@ -159,3 +159,113 @@ class Test(Scene):
         title = Text("Hello World")
         self.play(Write(title))
         self.wait(2)
+
+# Visual constants (for now)
+cell_size = 0.7
+cell_spacing = 0.05
+row_spacing = 1.3
+font_size = 28
+
+color_default = WHITE
+color_compare = YELLOW
+color_placed = GREEN
+color_split_line = GRAY
+
+def make_cell(value, border_color = color_default, text_color = WHITE):
+    # Creates a single cell with a number
+    box = Square(side_length = cell_size, color = border_color)
+    number = Text(str(value), font_size = font_size, color = text_color)
+    number.move_to(box.get_center())
+    cell = VGroup(box, number)
+    return cell
+
+# Turns list into group of cells
+def make_array(values, border_color = color_default, text_color = WHITE):
+    cells = VGroup()
+
+    for value in values:
+        cell = make_cell(value, border_color, text_color)
+        cells.add(cell)
+    cells.arrange(RIGHT, buff = cell_spacing)
+    return cells
+
+def make_row(row_data, border_color = color_default):
+    # Creates a full row
+    # Example:[[38, 27, 43], [9, 82, 10]] becomes two separate array groups
+    row = VGroup()
+
+    for sub_array in row_data:
+        visual_array = make_array(sub_array, border_color = border_color)
+        row.add(visual_array)
+
+    # Space the separate sub-arrays apart
+    row.arrange(RIGHT, buff = 0.6)
+    return row
+
+
+class MergeSortVisualization(Scene):
+
+    def construct(self):
+        # Title
+        title = Text("Merge Sort", font_size=38)
+        title.to_edge(UP)
+        self.play(Write(title))
+        self.wait(0.5)
+        
+        # Create original array
+        original_array = make_array(ARR)
+        original_array.move_to(ORIGIN)
+
+        #Creates label for the first row (the initial array)
+        input_label = Text("INPUT", font_size=20, color=GRAY)
+        input_label.next_to(original_array, LEFT, buff = 0.5)
+        self.play(FadeIn(original_array), FadeIn(input_label))
+        self.wait(1)
+
+        # Moves the original array up
+        original_group = VGroup(input_label, original_array)
+        self.play(original_group.animate.shift(UP * 2.5))
+        self.wait(0.5)
+
+        # Store visual rows for later changes (opacity and shifting)
+        visual_rows = [original_array]
+        visual_labels = [input_label]
+        previous_row = original_array
+
+        # Create the remaining output rows
+        for row_index in range(1, len(output)):
+            # Skip any unused rows.
+            if len(output[row_index]) == 0:
+                continue
+
+            # Create this visual row
+            new_row = make_row(output[row_index], border_color = color_default)
+
+            # Position underneath the previous row.
+            new_row.next_to(previous_row, DOWN, buff = row_spacing)
+
+            # Dim previous rows and labels
+            dim_animations = []
+            for old_row in visual_rows:
+                dim_animations.append(old_row.animate.set_opacity(0.35))
+
+            for old_label in visual_labels:
+                dim_animations.append(old_label.animate.set_opacity(0.35))
+
+            if len(dim_animations) > 0:
+                self.play(*dim_animations, run_time = 0.3)
+
+            self.play(FadeIn(new_row), run_time = 0.7)
+            visual_rows.append(new_row)
+            previous_row = new_row
+
+            # Move everything up if we start running out of screen space
+            all_visuals = VGroup(*visual_rows, *visual_labels)
+            if all_visuals.get_bottom()[1] < -3:
+                self.play(all_visuals.animate.shift(UP * 0.75), run_time = 0.8)
+
+        # Final row highlight
+        final_row = visual_rows[-1]
+        self.play(final_row.animate.set_opacity(1).set_color(color_placed))
+
+       
