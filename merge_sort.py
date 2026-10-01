@@ -5,17 +5,8 @@ ARR = [38, 27, 43, 3, 9, 82, 10]
 
 
 """ Initializing the Output array with empty rows. """
-# calculating how many rows needed for output
-how_many_rows = 0
-if len(ARR) == 2:
-    how_many_rows = 3
-elif len(ARR) < 5:
-    how_many_rows = 5
-elif len(ARR) < 9:
-    how_many_rows = 7
-elif len(ARR) <= 16:
-    how_many_rows = 9
-
+# One row per split/merge depth, plus the initial array.
+how_many_rows = 2 * (max(1, len(ARR)) - 1).bit_length() + 1
 
 output = [[] for _ in range(how_many_rows)]
 output[0].append(ARR[:])
@@ -123,42 +114,101 @@ def initial_checks(arr):
         results[0] = 1
         return results
 
-    # if arr only has 1 element, it is already sorted.
-    if len(arr) == 1:
-        results[1] = 1
-        return results
-
-    # otherwise check every element to see if it is the same type as the previous one and if arr is already sorted
-    sorted = True
+    # Check all types before attempting any ordering comparisons.
     for i in range(1, len(arr)):
-        # compare the types
-        if type(arr[i-1]) == type(arr[i]):
-
-            # if we still think its sorted, check if prev is greater than current to confirm its not sorted
-            if sorted == True and arr[i-1] > arr [i]:
-                sorted = False
-        
-        # if they are different types, then mark that in results and stop searching.
-        else:
+        if type(arr[i]) is not type(arr[0]):
             results[1] = i
             return results
 
-    if sorted:
+    # A singleton is already sorted, as are arrays of equal values.
+    if all(arr[i - 1] <= arr[i] for i in range(1, len(arr))):
         results[2] = 1
 
     return results
 
 
-initial_check_results = initial_checks(ARR)
-mergeSort(ARR, 1)
-fill_in_missing_entries()
-print(output)
-
 class Test(Scene):
     def construct(self):
-        title = Text("Hello World")
-        self.play(Write(title))
+        box_size = 0.9
+        gap = 0.12
+        array_boxes = VGroup()
+
+        for value in ARR:
+            box = Square(side_length=box_size, color=BLUE)
+            box.set_fill(BLUE, opacity=0.15)
+            label = Text(str(value), font_size=30)
+            if label.width > box_size * 0.75:
+                label.scale_to_fit_width(box_size * 0.75)
+            label.move_to(box.get_center())
+            array_boxes.add(VGroup(box, label))
+
+        array_boxes.arrange(RIGHT, buff=gap)
+        if array_boxes.width > config.frame_width - 1:
+            array_boxes.scale_to_fit_width(config.frame_width - 1)
+        array_boxes.move_to(ORIGIN)
+
+        if len(array_boxes):
+            self.play(
+                LaggedStart(
+                    *(FadeIn(cell, shift=UP * 0.2) for cell in array_boxes),
+                    lag_ratio=0.15,
+                ),
+                run_time=1.5,
+            )
+        else:
+            self.play(FadeIn(Text("[]", font_size=36).move_to(ORIGIN)))
+
+        check_rows = VGroup()
+        check_boxes = []
+        for name in ("Non-Empty", "Same Type", "Already sorted"):
+            checkbox = Square(side_length=0.35, color=WHITE)
+            label = Text(name, font_size=24)
+            row = VGroup(checkbox, label).arrange(RIGHT, buff=0.2)
+            check_rows.add(row)
+            check_boxes.append(checkbox)
+
+        check_rows.arrange(DOWN, aligned_edge=LEFT, buff=0.22)
+        check_rows.next_to(array_boxes if len(array_boxes) else ORIGIN, UP, buff=0.6)
+        self.play(FadeIn(check_rows))
+
+        results = initial_checks(ARR)
+        failure_messages = (
+            "The array is empty.",
+            "All elements must have the same type.",
+            "The array is already sorted.",
+        )
+        for index, (checkbox, result) in enumerate(zip(check_boxes, results)):
+            self.wait(0.5)
+            center = checkbox.get_center()
+            if result == -1:
+                # Draw the mark with lines so it does not depend on font glyphs.
+                mark = VMobject(color=GREEN, stroke_width=4)
+                mark.set_points_as_corners([
+                    center + LEFT * 0.11,
+                    center + LEFT * 0.025 + DOWN * 0.09,
+                    center + RIGHT * 0.12 + UP * 0.10,
+                ])
+            else:
+                mark = VGroup(
+                    Line(center + UL * 0.10, center + DR * 0.10, color=RED),
+                    Line(center + DL * 0.10, center + UR * 0.10, color=RED),
+                )
+            self.play(Create(mark), run_time=0.4)
+            if result != -1:
+                message = Text(failure_messages[index], font_size=24, color=RED)
+                message.next_to(array_boxes if len(array_boxes) else ORIGIN, DOWN, buff=0.6)
+                self.play(FadeIn(message))
+                self.wait(2)
+                return
+
+        # Only build sorting data after every check passes.
+        for row in output:
+            row.clear()
+        output[0].append(ARR[:])
+        mergeSort(ARR, 1)
+        fill_in_missing_entries()
         self.wait(2)
+
 
 # Visual constants (for now)
 cell_size = 0.7
