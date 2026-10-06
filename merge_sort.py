@@ -1,7 +1,7 @@
 from manim import *
 
 """ Variables to change (default is ARR = [38, 27, 43, 3, 9, 82, 10])"""
-ARR = [38, 27, 43, 9, 82, 10]
+ARR = [1, 2, 3, 4, 5]
 
 
 """ Initializing the Output array with empty rows. """
