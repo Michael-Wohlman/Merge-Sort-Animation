@@ -127,89 +127,6 @@ def initial_checks(arr):
     return results
 
 
-class Test(Scene):
-    def construct(self):
-        box_size = 0.9
-        gap = 0.12
-        array_boxes = VGroup()
-
-        for value in ARR:
-            box = Square(side_length=box_size, color=BLUE)
-            box.set_fill(BLUE, opacity=0.15)
-            label = Text(str(value), font_size=30)
-            if label.width > box_size * 0.75:
-                label.scale_to_fit_width(box_size * 0.75)
-            label.move_to(box.get_center())
-            array_boxes.add(VGroup(box, label))
-
-        array_boxes.arrange(RIGHT, buff=gap)
-        if array_boxes.width > config.frame_width - 1:
-            array_boxes.scale_to_fit_width(config.frame_width - 1)
-        array_boxes.move_to(ORIGIN)
-
-        if len(array_boxes):
-            self.play(
-                LaggedStart(
-                    *(FadeIn(cell, shift=UP * 0.2) for cell in array_boxes),
-                    lag_ratio=0.15,
-                ),
-                run_time=1.5,
-            )
-        else:
-            self.play(FadeIn(Text("[]", font_size=36).move_to(ORIGIN)))
-
-        check_rows = VGroup()
-        check_boxes = []
-        for name in ("Non-Empty", "Same Type", "Already sorted"):
-            checkbox = Square(side_length=0.35, color=WHITE)
-            label = Text(name, font_size=24)
-            row = VGroup(checkbox, label).arrange(RIGHT, buff=0.2)
-            check_rows.add(row)
-            check_boxes.append(checkbox)
-
-        check_rows.arrange(DOWN, aligned_edge=LEFT, buff=0.22)
-        check_rows.next_to(array_boxes if len(array_boxes) else ORIGIN, UP, buff=0.6)
-        self.play(FadeIn(check_rows))
-
-        results = initial_checks(ARR)
-        failure_messages = (
-            "The array is empty.",
-            "All elements must have the same type.",
-            "The array is already sorted.",
-        )
-        for index, (checkbox, result) in enumerate(zip(check_boxes, results)):
-            self.wait(0.5)
-            center = checkbox.get_center()
-            if result == -1:
-                # Draw the mark with lines so it does not depend on font glyphs.
-                mark = VMobject(color=GREEN, stroke_width=4)
-                mark.set_points_as_corners([
-                    center + LEFT * 0.11,
-                    center + LEFT * 0.025 + DOWN * 0.09,
-                    center + RIGHT * 0.12 + UP * 0.10,
-                ])
-            else:
-                mark = VGroup(
-                    Line(center + UL * 0.10, center + DR * 0.10, color=RED),
-                    Line(center + DL * 0.10, center + UR * 0.10, color=RED),
-                )
-            self.play(Create(mark), run_time=0.4)
-            if result != -1:
-                message = Text(failure_messages[index], font_size=24, color=RED)
-                message.next_to(array_boxes if len(array_boxes) else ORIGIN, DOWN, buff=0.6)
-                self.play(FadeIn(message))
-                self.wait(2)
-                return
-
-        # Only build sorting data after every check passes.
-        for row in output:
-            row.clear()
-        output[0].append(ARR[:])
-        mergeSort(ARR, 1)
-        fill_in_missing_entries()
-        self.wait(2)
-
-
 # Visual constants
 cell_size = 0.7
 cell_spacing = 0.05
@@ -217,10 +134,19 @@ row_spacing = 1.3
 font_size = 28
 STEP_RUN_TIME = 1
 STEP_PAUSE_TIME = 5
+CHECK_PAUSE_TIME = 1.5
+CHECK_MARK_RUN_TIME = 0.8
+CHECK_RESULT_HOLD_TIME = 2
+CHECK_FAILURE_HOLD_TIME = 4
+SPLIT_TRANSITION_PAUSE_TIME = 2
+MERGE_FOCUS_RUN_TIME = 0.5
+MERGE_FOCUS_PAUSE_TIME = 1
+MERGE_ELEMENT_PAUSE_TIME = 0.3
 Split_Text = "Splitting the array in half until every piece holds a single element"
 Merge_Text= "Merging the pieces back together in sorted order"
 color_default = WHITE
 color_compare = YELLOW
+color_merge_focus = BLUE
 color_placed = GREEN
 color_split_line = GRAY
 
@@ -246,16 +172,68 @@ def make_row(row_data, border_color = color_default):
 
 
 class MergeSortVisualization(Scene):
+    def move_merge_cell(self, cell, position):
+        # Place each number directly into the separate output row.
+        self.play(cell.animate.move_to(position), run_time=STEP_RUN_TIME)
+        self.wait(MERGE_ELEMENT_PAUSE_TIME)
+
+    def animate_initial_checks(self, array_display):
+        check_rows = VGroup()
+        check_boxes = []
+        check_marks = VGroup()
+        for name in ("Non-Empty", "Same Type", "Not Already sorted"):
+            checkbox = Square(side_length=0.35, color=WHITE)
+            label = Text(name, font_size=24)
+            row = VGroup(checkbox, label).arrange(RIGHT, buff=0.2)
+            check_rows.add(row)
+            check_boxes.append(checkbox)
+
+        check_rows.arrange(DOWN, aligned_edge=LEFT, buff=0.22)
+        check_rows.next_to(array_display, UP, buff=0.6)
+        self.play(FadeIn(check_rows))
+
+        results = initial_checks(ARR)
+        failure_messages = (
+            "The array is empty.",
+            "All elements must have the same type.",
+            "The array is already sorted.",
+        )
+        for index, (checkbox, result) in enumerate(zip(check_boxes, results)):
+            self.wait(CHECK_PAUSE_TIME)
+            center = checkbox.get_center()
+            if result == -1:
+                # Draw the mark with lines so it does not depend on font glyphs.
+                mark = VMobject(color=GREEN, stroke_width=4)
+                mark.set_points_as_corners([
+                    center + LEFT * 0.11,
+                    center + LEFT * 0.025 + DOWN * 0.09,
+                    center + RIGHT * 0.12 + UP * 0.10,
+                ])
+            else:
+                mark = VGroup(
+                    Line(center + UL * 0.10, center + DR * 0.10, color=RED),
+                    Line(center + DL * 0.10, center + UR * 0.10, color=RED),
+                )
+            check_marks.add(mark)
+            mark_animations = [Create(mark)]
+            if result != -1 and index == 1:
+                # The type check returns the index of the first mismatched element.
+                mark_animations.append(array_display[result].animate.set_color(RED))
+            elif result != -1 and index == 0:
+                mark_animations.append(array_display.animate.set_color(RED))
+            self.play(*mark_animations, run_time=CHECK_MARK_RUN_TIME)
+            if result != -1:
+                message = Text(failure_messages[index], font_size=24, color=RED)
+                message.next_to(array_display, DOWN, buff=0.6)
+                self.play(FadeIn(message))
+                self.wait(CHECK_FAILURE_HOLD_TIME)
+                return False
+
+        self.wait(CHECK_RESULT_HOLD_TIME)
+        self.play(FadeOut(check_rows), FadeOut(check_marks), run_time=1.5)
+        return True
+
     def construct(self):
-        # Generate merge sort data
-        for row in output:
-            row.clear()
-
-        output[0].append(ARR[:])
-
-        mergeSort(ARR, 1)
-        fill_in_missing_entries()
-
         # Title
         title = Text("Merge Sort", font_size = 38)
         title.to_edge(UP)
@@ -290,16 +268,30 @@ class MergeSortVisualization(Scene):
 
         # Labels
         input_label = Text("INPUT", font_size = 20, color = GRAY)
-        input_label.next_to(cells, LEFT, buff = 0.5)
+        array_display = cells if len(cells) else Text("[]", font_size=36).move_to(ORIGIN)
+        input_label.next_to(array_display, LEFT, buff = 0.5)
         phase_label = None
-        self.play(FadeIn(cells), FadeIn(input_label))
+        self.play(FadeIn(array_display), FadeIn(input_label))
         self.wait(1)
 
+        if not self.animate_initial_checks(array_display):
+            return
+
+        # Only build sorting data after every initial check passes.
+        for row in output:
+            row.clear()
+        output[0].append(ARR[:])
+        mergeSort(ARR, 1)
+        fill_in_missing_entries()
+
         # INPUT label is no longer necessary once animation starts
-        self.play(FadeOut(input_label))
+        self.play(FadeOut(input_label), run_time=1.5)
+        self.wait(SPLIT_TRANSITION_PAUSE_TIME)
        
         # Determine where splitting changes into merging
         middle_row_index = how_many_rows // 2
+
+        merge_row_started = False
 
         # Animate each row generated by merge sort
         for row_index in range(1, len(output)):
@@ -321,8 +313,9 @@ class MergeSortVisualization(Scene):
             new_phase_label.to_edge(DOWN)
 
             if phase_label is None:
-                self.play(FadeIn(new_phase_label), run_time=0.3)
+                self.play(FadeIn(new_phase_label), run_time=1)
                 phase_label = new_phase_label
+                self.wait(SPLIT_TRANSITION_PAUSE_TIME)
             elif phase_label.text != new_phase_label.text:
                 self.play(FadeOut(phase_label), FadeIn(new_phase_label), run_time=0.3)
                 phase_label = new_phase_label
@@ -335,6 +328,18 @@ class MergeSortVisualization(Scene):
             # Make sure the target layout fits on screen
             if target_row.width > config.frame_width - 1:
                 target_row.scale_to_fit_width(config.frame_width - 1)
+
+            if row_index > middle_row_index:
+                # Keep two lines visible: remaining input below, merged output above.
+                # The previous output becomes the input for the next merge level.
+                input_shift = DOWN * (row_spacing if merge_row_started else row_spacing / 2)
+                self.play(*[
+                    item["cell"].animate.shift(input_shift)
+                    for item in cell_data
+                ], run_time=STEP_RUN_TIME)
+                target_row.shift(UP * row_spacing / 2)
+                merge_row_started = True
+                self.wait(MERGE_ELEMENT_PAUSE_TIME)
 
             # Organize existing cells by their values
             available_cells = {}
@@ -354,22 +359,50 @@ class MergeSortVisualization(Scene):
 
                 available_cells[value].sort(key = lambda c: c.get_center()[0])
 
-            # Match existing cells with target positions
-            animations = []
+            # Match all cells before moving them, including duplicate values.
+            matched_groups = []
 
             for sub_array_values, target_sub_array in zip(row_data, target_row):
-
+                matched_cells = []
                 for value, target_cell in zip(sub_array_values, target_sub_array):
 
                     # Grab existing cell containing this value
                     current_cell = available_cells[value].pop(0)
 
-                    # Move that existing cell instead of creating a new one
-                    animations.append(current_cell.animate.move_to(target_cell.get_center()))
+                    matched_cells.append((current_cell, target_cell.get_center()))
+                matched_groups.append(matched_cells)
 
-            # Perform this merge-sort step
-            self.play(*animations, run_time=STEP_RUN_TIME)
-            self.wait(STEP_PAUSE_TIME)
+            if row_index <= middle_row_index:
+                # Split the whole row together as before.
+                self.play(*[
+                    cell.animate.move_to(position)
+                    for group in matched_groups
+                    for cell, position in group
+                ], run_time=STEP_RUN_TIME)
+                self.wait(STEP_PAUSE_TIME)
+            else:
+                # Each destination group combines two sorted input groups.
+                # Focus on one pair at a time, proceeding from left to right.
+                for group in matched_groups:
+                    if len(group) == 1:
+                        # A carried singleton has no partner to merge yet.
+                        cell, position = group[0]
+                        self.move_merge_cell(cell, position)
+                        continue
+
+                    self.play(*[
+                        cell.animate.set_color(color_merge_focus)
+                        for cell, _ in group
+                    ], run_time=MERGE_FOCUS_RUN_TIME)
+                    self.wait(MERGE_FOCUS_PAUSE_TIME)
+                    # Destination order is sorted, so place one number at a time.
+                    for cell, position in group:
+                        self.move_merge_cell(cell, position)
+                    self.wait(STEP_PAUSE_TIME)
+                    self.play(*[
+                        cell.animate.set_color(color_default)
+                        for cell, _ in group
+                    ], run_time=MERGE_FOCUS_RUN_TIME)
 
         
         # Final sorted-array highlight
