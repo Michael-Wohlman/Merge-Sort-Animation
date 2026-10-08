@@ -396,15 +396,8 @@ class MergeSortVisualization(Scene):
                 ], run_time=STEP_RUN_TIME)
                 self.wait(STEP_PAUSE_TIME)
             else:
-                # Each destination group combines two sorted input groups.
-                # Focus on one pair at a time, proceeding from left to right.
+                # Focus on each group, including carried singletons, from left to right.
                 for group in matched_groups:
-                    if len(group) == 1:
-                        # A carried singleton has no partner to merge yet.
-                        cell, position = group[0]
-                        self.move_merge_cell(cell, position)
-                        continue
-
                     self.play(*[
                         cell.animate.set_color(color_merge_focus)
                         for cell, _ in group
