@@ -38,10 +38,33 @@ dovetail_inner_width = 85; // [10:99]
 dovetail_depth = 10; // [1:99]
 
 
+/* [ Male Mount ] */
+
+// Thickness of male mounting plate (mm)
+male_plate_depth = 5; // [2:20]
+
+// Width of male mounting plate (mm)
+male_plate_width = 100; // [20:150]
+
+// Height of male mounting plate (mm)
+male_plate_height = 30; // [10:100]
+
+// Number of screw holes
+male_screw_holes = 2; // [0,2,4,6]
+
+// Diameter of screw holes (mm)
+male_screw_diameter = 3; // [1:10]
+
+// Distance of screw holes from plate edges (mm)
+male_screw_inset = 10; // [5:30]
+
 
 /* [ Other ] */
-// clearence (mm)
-clearence = 0.1; // [0:1]
+// Clearance between the two dovetail pieces (mm)
+clearence = 0.2; // [0:0.05:1]
+
+// Display mode
+display_mode = "Separated"; // [Together, Separated, Wall Mount, Male Mount]
 
 /* [ Hidden ] */
 
@@ -104,4 +127,116 @@ module DoveTail(clear) {
     
 }
 
-WallMount();
+// Second half of the dovetail mount
+
+
+
+
+
+module MaleMount() {
+
+    difference() {
+
+        union() {
+
+            // Male dovetail
+            DoveTail(-clearence);
+
+            // Rounded backing plate
+            // Clearance affects width and height,
+            // but the plate stays connected to the dovetail
+            translate([
+                0,
+                clearence,
+                plate_height/2
+            ])
+            rotate([90,0,0])
+            linear_extrude(
+                height=male_plate_depth + clearence
+            )
+            offset(r=plate_offset)
+            offset(r=-plate_offset)
+            square([
+                male_plate_width - 2*clearence,
+                male_plate_height - 2*clearence
+            ], center=true);
+        }
+
+        // Screw holes in backing plate
+        if (male_screw_holes > 0) {
+
+            for (i=[0:male_screw_holes-1]) {
+
+                x_pos =
+                    -(male_plate_width - 2*clearence)/2 +
+                    male_screw_inset +
+                    i * (
+                        (male_plate_width -
+                        2*clearence -
+                        2*male_screw_inset) /
+                        max(1,male_screw_holes-1)
+                    );
+
+                // Through holes
+                translate([
+                    x_pos,
+                    -male_plate_depth/2,
+                    plate_height/2
+                ])
+                rotate([90,0,0])
+                cylinder(
+                    h=male_plate_depth + 2*clearence + 2,
+                    d=male_screw_diameter,
+                    center=true,
+                    $fn=64
+                );
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+/* [ Display ] */
+
+if (display_mode == "Together") {
+
+    color("LightGray")
+    WallMount();
+
+    color("Orange")
+    MaleMount();
+
+}
+else if (display_mode == "Separated") {
+
+    color("LightGray")
+    WallMount();
+
+    translate([plate_width + 20, 0, 0])
+    color("Orange")
+    MaleMount();
+
+}
+else if (display_mode == "Wall Mount") {
+
+    WallMount();
+
+}
+else if (display_mode == "Male Mount") {
+
+    MaleMount();
+
+}
+else {
+
+    // Fallback to avoid empty geometry
+    WallMount();
+
+}
+
+
