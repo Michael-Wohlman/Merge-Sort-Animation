@@ -147,7 +147,7 @@ MERGE_ELEMENT_PAUSE_TIME = 0.3
 SPLIT_EXPLANATIONS = [
     "Divide the original array into two halves.",
     "Continue dividing each subarray into smaller pieces.",
-    "Split until every subarray contains only one element."
+    "Split until every subarray contains only one element, and is therefore technically sorted."
 ]
 MERGE_EXPLANATIONS = [
     "Begin merging individual elements into sorted subarrays.",

@@ -1,7 +1,7 @@
 
 /* [ Wall Mount Plate ] */
 // How many screw holes on wall mount plate
-screw_holes = 2; // [0,2,4,6]
+screw_holes = 2; // [0,2]
 
 // How thick is the head of the screws (mm)
 screw_thickness = 5; // [0:10]
@@ -82,20 +82,22 @@ module WallMount() {
         // Dovetail
         DoveTail(clearence);
         
-        // Screw Indent
-        translate([0,dovetail_depth,plate_height/2 + dovetail_base,])
-        cube([dovetail_inner_width/2, screw_thickness, plate_height], center=true);
-        
-        // Screw Holes
-        for (i=[1:2]) {
-            rotate([90,0,0])
-            translate([
-            0,
-            dovetail_base + (((plate_height - dovetail_base)/3)*i),
-            -plate_depth/2
-            ])
-            cylinder(h=plate_depth, r=screw_diameter + clearence, center = true);
+        if (screw_holes != 0) {
+            // Screw Indent
+            translate([0,dovetail_depth,plate_height/2 + dovetail_base,])
+            cube([dovetail_inner_width/2, screw_thickness, plate_height], center=true);
             
+            // Screw Holes
+            for (i=[1:2]) {
+                rotate([90,0,0])
+                translate([
+                0,
+                dovetail_base + (((plate_height - dovetail_base)/3)*i),
+                -plate_depth/2
+                ])
+                cylinder(h=plate_depth, r=screw_diameter + clearence, center = true);
+                
+            };
         };
         
     };
