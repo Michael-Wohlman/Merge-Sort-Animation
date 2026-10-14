@@ -3,7 +3,7 @@ from email import message
 from manim import *  # pyright: ignore[reportMissingImports]
 
 """ Variables to change (default is ARR = [38, 27, 43, 3, 9, 82, 10])"""
-ARR = [38, 27, 43, 9, 82, 10]
+ARR = [38, 27, 43, 9, 82, 10, 89, 101, 2, 43, 61, 72, 90, 115, 127, 12, 13, 9]
 
 
 """ Initializing the Output array with empty rows. """
@@ -59,52 +59,22 @@ def mergeSort(arr, current_row):
     return merged
 
 def fill_in_missing_entries():
-    # The only rows where we can have missing elements is in the middle row (where everything is by itself)
-    # or the row after where they are merging things for the first time. Therefore, just compare those rows with
-    # the rows above them to fill in any blanks.
+    """Carry every singleton through the deepest split and first merge."""
+    middle_row_index = how_many_rows // 2
+    if middle_row_index == 0:
+        return
 
-    # I know what your thinking. "Five for loops?! is this dev insane?!"
-    # Maybe. But it is not O(n^5). The five for loops are to deal with the complex data.
-    # We have elements of a list that are themselves lists, which contain subarrays.
-    # The nested for loops are really just for accessing these rows of subarrays, and each row of subarrays in length n.
-    # So we compare the row above middle to the middle row, then the row above middle to the row below middle.
-    # Which makes this O(4*n) = O(n) technically.
+    # At this depth each segment has one or two elements. Rebuild these
+    # two rows from their parent segments, preserving position and duplicates.
+    # A singleton stays in place while a pair splits and then merges.
+    parent_row = output[middle_row_index - 1]
+    output[middle_row_index] = [
+        [value] for segment in parent_row for value in segment
+    ]
+    output[middle_row_index + 1] = [
+        sorted(segment) for segment in parent_row
+    ]
 
-    # For example, we could have [
-    # [[5,2], [1], [3,4]],        above middle
-    # [[5], [2], [3], [4]],       middle
-    # [[2, 5], [3,4]]             below middle
-    # if we want to fill in the missing [1]s, we need to compare the above to middle and above to below.
-
-    counter = 0 # keep a counter b/c each insert means we have to move it over by one.
-    middle_row_index = (how_many_rows // 2) # to quickly find middle rows.
-
-    for row in range(middle_row_index, middle_row_index + 2):
-
-        for segment in range(len(output[middle_row_index - 1])):
-            
-            for element in range(len(output[middle_row_index - 1][segment])):
-
-                # Start above the middle row, check to see the element is in the row below.
-                done = False
-                for below_segment in output[row]:
-                    
-                    for below_element in below_segment:
-                        if output[middle_row_index - 1][segment][element] == below_element:
-                            done = True
-                            break
-
-                # if it's not in the row below, we need to add it.
-                if not done:
-
-                    # we know the missing element is at element in segment, so we add it to the next row
-                    # and increment the counter
-                    output[row].insert(segment + counter, output[middle_row_index - 1][segment])
-
-                    # we only need the counter for the middle row
-                    if row == middle_row_index:
-                        counter += 1
-        counter = 0
 
 def initial_checks(arr):
 
@@ -130,10 +100,10 @@ def initial_checks(arr):
 
 
 # Visual constants
-cell_size = 0.7
 cell_spacing = 0.05
+cell_size =  min(.7, 12 / ((0.7 * len(ARR)) + (cell_spacing * len(ARR))))
 row_spacing = 1.3
-font_size = 28
+font_size = 40 * cell_size
 STEP_RUN_TIME = 1
 STEP_PAUSE_TIME = 2
 CHECK_PAUSE_TIME = 1.5
