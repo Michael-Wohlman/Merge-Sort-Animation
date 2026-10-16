@@ -1,0 +1,49 @@
+{
+    "fileFormatVersion": "1",
+    "parameterSets": {
+        "Compact Mount": {
+            "clearence": "0.20000000000000001",
+            "display_mode": "Separated",
+            "dovetail_base": "5",
+            "dovetail_depth": "6",
+            "dovetail_inner_width": "46",
+            "dovetail_outer_width": "36",
+            "dovetail_vertical_angle": "10",
+            "male_plate_depth": "3",
+            "male_plate_height": "20",
+            "male_plate_width": "60",
+            "male_screw_diameter": "4",
+            "male_screw_holes": "4",
+            "male_screw_inset": "8",
+            "plate_depth": "10",
+            "plate_height": "20",
+            "plate_offset": "3",
+            "plate_width": "60",
+            "screw_diameter": "6",
+            "screw_holes": "0",
+            "screw_thickness": "4"
+        },
+        "Standard Mount": {
+            "clearence": "0.20000000000000001",
+            "display_mode": "Separated",
+            "dovetail_base": "5",
+            "dovetail_depth": "10",
+            "dovetail_inner_width": "85",
+            "dovetail_outer_width": "70",
+            "dovetail_vertical_angle": "10",
+            "male_plate_depth": "5",
+            "male_plate_height": "30",
+            "male_plate_width": "100",
+            "male_screw_diameter": "3",
+            "male_screw_holes": "2",
+            "male_screw_inset": "10",
+            "plate_depth": "15",
+            "plate_height": "30",
+            "plate_offset": "5",
+            "plate_width": "100",
+            "screw_diameter": "2",
+            "screw_holes": "2",
+            "screw_thickness": "4"
+        }
+    }
+}
