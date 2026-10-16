@@ -2,8 +2,13 @@ from email import message
 
 from manim import *  # pyright: ignore[reportMissingImports]
 
-""" Variables to change (default is ARR = [38, 27, 43, 3, 9, 82, 10])"""
-ARR = [38, 27, 43, 9, 82, 10, 89, 101, 2, 43, 61, 72, 90, 115, 127, 12, 13, 9]
+""" Variables to change """
+# Input array (default is ARR = [38, 27, 43, 3, 9, 82, 10])
+ARR = [38, 27, 43, 3, 9, 82, 10]
+
+# Speed of animation (1 = normal, 2 = double, etc.)
+ANIM_SPEED = 2
+
 
 
 """ Initializing the Output array with empty rows. """
@@ -104,16 +109,17 @@ cell_spacing = 0.05
 cell_size =  min(.7, 12 / ((0.7 * len(ARR)) + (cell_spacing * len(ARR))))
 row_spacing = 1.3
 font_size = 40 * cell_size
-STEP_RUN_TIME = 1
-STEP_PAUSE_TIME = 2
-CHECK_PAUSE_TIME = 1.5
-CHECK_MARK_RUN_TIME = 0.8
-CHECK_RESULT_HOLD_TIME = 2
-CHECK_FAILURE_HOLD_TIME = 4
-SPLIT_TRANSITION_PAUSE_TIME = 3
-MERGE_FOCUS_RUN_TIME = 0.5
-MERGE_FOCUS_PAUSE_TIME = 1
-MERGE_ELEMENT_PAUSE_TIME = 0.3
+ANIMATION_SPEED_MULT = 1 / ANIM_SPEED
+STEP_RUN_TIME = 1               * ANIMATION_SPEED_MULT
+STEP_PAUSE_TIME = 2             * ANIMATION_SPEED_MULT
+CHECK_PAUSE_TIME = 1.5          * ANIMATION_SPEED_MULT
+CHECK_MARK_RUN_TIME = 0.8       * ANIMATION_SPEED_MULT
+CHECK_RESULT_HOLD_TIME = 2      * ANIMATION_SPEED_MULT
+CHECK_FAILURE_HOLD_TIME = 4     * ANIMATION_SPEED_MULT
+SPLIT_TRANSITION_PAUSE_TIME = 3 * ANIMATION_SPEED_MULT
+MERGE_FOCUS_RUN_TIME = 0.5      * ANIMATION_SPEED_MULT
+MERGE_FOCUS_PAUSE_TIME = 1      * ANIMATION_SPEED_MULT
+MERGE_ELEMENT_PAUSE_TIME = 0.3  * ANIMATION_SPEED_MULT
 SPLIT_EXPLANATIONS = [
     "Divide the original array into two halves.",
     "Continue dividing each subarray into smaller pieces.",
